@@ -1,0 +1,2 @@
+# Shorts
+Simple Diary App
