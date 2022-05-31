@@ -45,11 +45,8 @@ public class SubActivity extends AppCompatActivity {
     EditText title, contents;
     SQLiteDatabase sqlDB;
 
-    Uri uri;
     ImageView imageView;
     private static final int PERMISSION_REQUEST_CODE = 1;
-
-    //try
     String path;
 
 
@@ -101,9 +98,7 @@ public class SubActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(),"수정됨",Toast.LENGTH_SHORT).show();
                     }catch (Exception e) {}
                 }
-
-//                addPicture(path);
-
+                addPicture(path);
             }
         });
 
@@ -186,7 +181,7 @@ public class SubActivity extends AppCompatActivity {
 
     public void addPicture(String path) {
         Retrofit retrofit = new Retrofit.Builder()
-                                .baseUrl("http://192.168.10.66:8080/Shorts/")
+                                .baseUrl("http://192.168.10.66/")
                                 .addConverterFactory(GsonConverterFactory.create())
                                 .build();
         File file = new File(path);
@@ -195,8 +190,6 @@ public class SubActivity extends AppCompatActivity {
 
         ApiService apiService = retrofit.create(ApiService.class);
         Call<AddPictureRes> call = apiService.addPicture(body);
-
-        Log.v("## call ",""+call);
 
         call.enqueue(new Callback<AddPictureRes>() {
             @Override
@@ -212,9 +205,6 @@ public class SubActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AddPictureRes> call, Throwable t) {
-
-                Log.v("## call2222 ",""+call);
-
                 Toast.makeText(getApplicationContext(),t.toString(), Toast.LENGTH_SHORT).show();
             }
         });

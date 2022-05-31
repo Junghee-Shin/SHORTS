@@ -12,7 +12,7 @@ import retrofit2.http.Part;
 public interface ApiService {
 
     @Multipart
-    @POST("RestApi/AddPicture.php")
+    @POST("AddPicture.php")
     Call<AddPictureRes> addPicture(@Part MultipartBody.Part image);
 
 }
