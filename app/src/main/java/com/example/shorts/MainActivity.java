@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
     Bitmap bitmap;
+    String path="http://192.168.10.66/uploads/";
     String imageUrl="";
 
     @Override
@@ -86,8 +87,7 @@ public class MainActivity extends AppCompatActivity {
                         titleExtra = cursor.getString(1);
                         contentsExtra = cursor.getString(2);
                         uriExtra = cursor.getString(3);
-
-                        imageUrl = uriExtra;
+                        imageUrl = path + uriExtra;
                     }
                 }
 
@@ -122,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
 
                 title.setText(titleExtra);
                 contents.setText(contentsExtra);
-                uri.setText(uriExtra);
                 cursor.close();
                 sqlDB.close();
             }

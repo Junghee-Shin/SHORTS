@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -42,8 +41,10 @@ public class SubActivity extends AppCompatActivity {
     myDBHelper myDBHelper;
     Button btnWrite, btnImage;
     TextView selectDay;
+    String date;
     EditText title, contents;
     SQLiteDatabase sqlDB;
+    File file;
 
     ImageView imageView;
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -67,6 +68,7 @@ public class SubActivity extends AppCompatActivity {
         selectDay.setText(intent.getExtras().getString("date"));
         title.setText(intent.getExtras().getString("title"));
         contents.setText(intent.getExtras().getString("contents"));
+        date = (intent.getExtras().getString("date")).replace(".","");
 
         if( intent.getExtras().getInt("type") == 1 ) {
             btnWrite.setText("작성");
@@ -78,27 +80,29 @@ public class SubActivity extends AppCompatActivity {
         btnWrite.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int sqlDate = Integer.parseInt((selectDay.getText().toString()).replace(".",""));
+
+                int sqlDate = Integer.parseInt(date);
                 String sqlTitle = title.getText().toString();
                 String sqlContents = contents.getText().toString();
-                String sqlFilePath = path;
+                String sqlFilePath = date+"_"+file.getName();
                 sqlDB = myDBHelper.getWritableDatabase();
 
                 if( intent.getExtras().getInt("type") == 1 ) {
                     try {
                         sqlDB.execSQL("INSERT INTO diaryTBL VALUES ("+ sqlDate +",'"+ sqlTitle +"','"+ sqlContents +"','"+ sqlFilePath +"');");
                         sqlDB.close();
-                        Toast.makeText(getApplicationContext(),"입력됨",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"입력되었습니다.",Toast.LENGTH_SHORT).show();
+                        addPicture();
                     }catch (Exception e) {}
 
                 }else {
                     try {
                         sqlDB.execSQL("UPDATE diaryTBL SET title = '"+ sqlTitle +"', contents = '"+ sqlContents +"', filepath = '"+ sqlFilePath +"' WHERE date ="+ sqlDate +";");
                         sqlDB.close();
-                        Toast.makeText(getApplicationContext(),"수정됨",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"수정되었습니다.",Toast.LENGTH_SHORT).show();
+                        addPicture();
                     }catch (Exception e) {}
                 }
-                addPicture(path);
             }
         });
 
@@ -166,6 +170,7 @@ public class SubActivity extends AppCompatActivity {
             Uri uri = data.getData();
             Context context = SubActivity.this;
             path = RealPathUtil.getRealPath(context, uri);
+            file = new File(path);
 
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
@@ -175,18 +180,16 @@ public class SubActivity extends AppCompatActivity {
             }catch (IOException e){
                 e.printStackTrace();
             }
-
         }
     }
 
-    public void addPicture(String path) {
+    public void addPicture() {
         Retrofit retrofit = new Retrofit.Builder()
                                 .baseUrl("http://192.168.10.66/")
                                 .addConverterFactory(GsonConverterFactory.create())
                                 .build();
-        File file = new File(path);
         RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"),file);
-        MultipartBody.Part body = MultipartBody.Part.createFormData("image",file.getName(),requestFile);
+        MultipartBody.Part body = MultipartBody.Part.createFormData("image",date+"_"+file.getName(),requestFile);
 
         ApiService apiService = retrofit.create(ApiService.class);
         Call<AddPictureRes> call = apiService.addPicture(body);
@@ -196,7 +199,10 @@ public class SubActivity extends AppCompatActivity {
             public void onResponse(Call<AddPictureRes> call, Response<AddPictureRes> response) {
                 if(response.isSuccessful()){
                     if(response.body().getStatus().toString().equals("200")){
-                        Toast.makeText(getApplicationContext(),"Customer Added", Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(getApplicationContext(),"Customer Added", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                        startActivity(intent);
+
                     } else {
                         Toast.makeText(getApplicationContext(),"not Added", Toast.LENGTH_SHORT).show();
                     }
