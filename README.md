@@ -30,3 +30,13 @@ Server : PHP
 
 ### Retrieve View
 <img src="https://github.com/Junghee-Shin/Shorts/blob/master/img/img_retrieve.png" width="30%" height="30%"/>
+
+
+
+### Update View
+<img src="https://github.com/Junghee-Shin/Shorts/blob/master/img/img_update.png" width="30%" height="30%"/>
+
+
+
+### After Update View
+<img src="https://github.com/Junghee-Shin/Shorts/blob/master/img/img_retrieveAfterUpdate.png" width="30%" height="30%"/>
