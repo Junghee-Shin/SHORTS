@@ -6,5 +6,5 @@ IDE : Android Studio
 Language : Java  
 Server : PHP  
 
-![main] (forDescription/img_main.png)  
+![main] (./img/img_main.png)  
 
