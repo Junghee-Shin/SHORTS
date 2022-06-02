@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                 titleExtra = "";
                 contentsExtra = "작성된 일기가 없습니다.";
                 uriExtra = "";
+                imageUrl = "";
 
                 if( cursor.getCount() > 0 ) {
                     while (cursor.moveToNext()){
@@ -101,40 +102,42 @@ public class MainActivity extends AppCompatActivity {
                         uriExtra = cursor.getString(3);
                         imageUrl = baseUrl +"uploads/"+ uriExtra;
                     }
-                }
+                    Thread Thread = new Thread() {
+                        @Override
+                        public void run(){
+                            try{
+                                URL url = new URL(imageUrl);
+                                //     HttpURLConnection의 인스턴스가 될 수 있으므로 캐스팅해서 사용한다
+                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                // conn.setDoInput(true); //Server 통신에서 입력 가능한 상태로 만듦
+                                conn.connect();
+                                //inputStream 값 가져오기
+                                InputStream is = conn.getInputStream();
+                                // Bitmap으로 반환
+                                bitmap = BitmapFactory.decodeStream(is);
 
-                Thread Thread = new Thread() {
-                    @Override
-                    public void run(){
-                        try{
-                            URL url = new URL(imageUrl);
-                            //     HttpURLConnection의 인스턴스가 될 수 있으므로 캐스팅해서 사용한다
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                            // conn.setDoInput(true); //Server 통신에서 입력 가능한 상태로 만듦
-                            conn.connect();
-                            //inputStream 값 가져오기
-                            InputStream is = conn.getInputStream();
-                            // Bitmap으로 반환
-                            bitmap = BitmapFactory.decodeStream(is);
-
-                        } catch (IOException e){
-                            e.printStackTrace();
+                            } catch (IOException e){
+                                e.printStackTrace();
+                            }
                         }
+                    };
+                    Thread.start();
+                    try{
+                        //join() 호출하여 별도의 작업 Thread가 종료될 때까지 메인 Thread가 기다림
+                        Thread.join();
+                        imageView.setImageBitmap(bitmap);
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
                     }
-                };
+                    title.setText(titleExtra);
+                    contents.setText(contentsExtra);
 
-                Thread.start();
-
-                try{
-                    //join() 호출하여 별도의 작업 Thread가 종료될 때까지 메인 Thread가 기다림
-                    Thread.join();
-                    imageView.setImageBitmap(bitmap);
-                }catch (InterruptedException e){
-                    e.printStackTrace();
+                }else {
+                    title.setText(titleExtra);
+                    contents.setText(contentsExtra);
+                    imageView.setImageBitmap(null);
                 }
 
-                title.setText(titleExtra);
-                contents.setText(contentsExtra);
                 cursor.close();
                 sqlDB.close();
             }
@@ -175,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
             case 2:
                 String titleExtra = "";
                 String contentsExtra = "";
+                String image = "";
                 cursor = sqlDB.rawQuery("SELECT * FROM diaryTBL WHERE date = "+ sqlDate +";",null);
                 if( cursor.getCount() > 0 ) {
                     while (cursor.moveToNext()){
@@ -195,7 +199,8 @@ public class MainActivity extends AppCompatActivity {
 
                 title.setText("");
                 contents.setText("작성된 일기가 없습니다.");
-                imageView.setImageBitmap(null);
+                bitmap = null;
+                imageView.setImageBitmap(bitmap);
 
                 return true;
         }

@@ -5,13 +5,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,6 +30,9 @@ import androidx.core.content.ContextCompat;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -44,6 +50,7 @@ public class SubActivity extends AppCompatActivity {
     String date;
     EditText title, contents;
     SQLiteDatabase sqlDB;
+    Cursor cursor;
     File file;
 
     ImageView imageView;
@@ -51,6 +58,9 @@ public class SubActivity extends AppCompatActivity {
     String path;
     String baseUrl = "http://192.168.10.66/";
 
+    Bitmap bitmap = null;
+    String uriExtra = "";
+    String imageUrl = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +85,7 @@ public class SubActivity extends AppCompatActivity {
             btnWrite.setText("작성");
         }else {
             btnWrite.setText("수정");
+            getImage(date);
         }
 
         myDBHelper = new myDBHelper(this);
@@ -85,7 +96,7 @@ public class SubActivity extends AppCompatActivity {
                 int sqlDate = Integer.parseInt(date);
                 String sqlTitle = title.getText().toString();
                 String sqlContents = contents.getText().toString();
-                String sqlFilePath = date+"_"+file.getName();
+                String sqlFilePath = ( file != null ? date+"_"+file.getName() : "" ) ;
                 sqlDB = myDBHelper.getWritableDatabase();
 
                 if( intent.getExtras().getInt("type") == 1 ) {
@@ -128,6 +139,45 @@ public class SubActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void getImage(String date) {
+        sqlDB = myDBHelper.getReadableDatabase();
+        cursor = sqlDB.rawQuery("SELECT * FROM diaryTBL WHERE date = "+ date +";",null);
+
+        if( cursor.getCount() > 0 ) {
+            while (cursor.moveToNext()){
+                uriExtra = cursor.getString(3);
+                imageUrl = baseUrl +"uploads/"+ uriExtra;
+            }
+            Thread Thread = new Thread() {
+                @Override
+                public void run(){
+                    try{
+                        URL url = new URL(imageUrl);
+                        //     HttpURLConnection의 인스턴스가 될 수 있으므로 캐스팅해서 사용한다
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        // conn.setDoInput(true); //Server 통신에서 입력 가능한 상태로 만듦
+                        conn.connect();
+                        //inputStream 값 가져오기
+                        InputStream is = conn.getInputStream();
+                        // Bitmap으로 반환
+                        bitmap = BitmapFactory.decodeStream(is);
+
+                    } catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }
+            };
+            Thread.start();
+            try{
+                //join() 호출하여 별도의 작업 Thread가 종료될 때까지 메인 Thread가 기다림
+                Thread.join();
+                imageView.setImageBitmap(bitmap);
+            }catch (InterruptedException e){
+                e.printStackTrace();
+            }
+        }
     }
 
     private void requestPermission(){
