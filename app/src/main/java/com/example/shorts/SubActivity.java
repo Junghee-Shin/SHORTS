@@ -49,6 +49,7 @@ public class SubActivity extends AppCompatActivity {
     ImageView imageView;
     private static final int PERMISSION_REQUEST_CODE = 1;
     String path;
+    String baseUrl = "http://192.168.10.66/";
 
 
     @Override
@@ -185,7 +186,7 @@ public class SubActivity extends AppCompatActivity {
 
     public void addPicture() {
         Retrofit retrofit = new Retrofit.Builder()
-                                .baseUrl("http://192.168.10.66/")
+                                .baseUrl(baseUrl)
                                 .addConverterFactory(GsonConverterFactory.create())
                                 .build();
         RequestBody requestFile = RequestBody.create(MediaType.parse("multipart/form-data"),file);

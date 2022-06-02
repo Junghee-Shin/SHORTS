@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -28,17 +27,29 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class MainActivity extends AppCompatActivity {
     myDBHelper myDBHelper;
     CalendarView calendarView;
     TextView title, selectDay, contents, uri;
     String formatDate, day;
     SQLiteDatabase sqlDB;
-
     ImageView imageView;
-    Bitmap bitmap;
-    String path="http://192.168.10.66/uploads/";
-    String imageUrl="";
+
+    String titleExtra = "";
+    String contentsExtra = "작성된 일기가 없습니다.";
+    String uriExtra = "";
+
+    Bitmap bitmap = null;
+    String imageUrl = null;
+    String baseUrl = "http://192.168.10.66/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,22 +83,23 @@ public class MainActivity extends AppCompatActivity {
                 String mm = String.valueOf(month+1);
                 String dd = String.valueOf(dayOfMonth);
 
-                day = yyyy +"."+ ( month+1 < 10 ? "0"+mm : mm ) +"."+ dd;
+                day = yyyy +"."+ ( month+1 < 10 ? "0"+mm : mm ) +"."+ ( dayOfMonth < 10 ? "0"+dd : dd );
                 selectDay.setText(day);
                 int sqlDate = Integer.parseInt(day.replace(".",""));
 
                 sqlDB = myDBHelper.getReadableDatabase();
                 Cursor cursor;
                 cursor = sqlDB.rawQuery("SELECT * FROM diaryTBL WHERE date = "+ sqlDate +";",null);
-                String titleExtra = "";
-                String contentsExtra = "작성된 일기가 없습니다.";
-                String uriExtra = "";
+                titleExtra = "";
+                contentsExtra = "작성된 일기가 없습니다.";
+                uriExtra = "";
+
                 if( cursor.getCount() > 0 ) {
                     while (cursor.moveToNext()){
                         titleExtra = cursor.getString(1);
                         contentsExtra = cursor.getString(2);
                         uriExtra = cursor.getString(3);
-                        imageUrl = path + uriExtra;
+                        imageUrl = baseUrl +"uploads/"+ uriExtra;
                     }
                 }
 
@@ -96,14 +108,15 @@ public class MainActivity extends AppCompatActivity {
                     public void run(){
                         try{
                             URL url = new URL(imageUrl);
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             //     HttpURLConnection의 인스턴스가 될 수 있으므로 캐스팅해서 사용한다
-                            //     conn.setDoInput(true); //Server 통신에서 입력 가능한 상태로 만듦
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            // conn.setDoInput(true); //Server 통신에서 입력 가능한 상태로 만듦
                             conn.connect();
-                            InputStream is = conn.getInputStream();
                             //inputStream 값 가져오기
-                            bitmap = BitmapFactory.decodeStream(is);
+                            InputStream is = conn.getInputStream();
                             // Bitmap으로 반환
+                            bitmap = BitmapFactory.decodeStream(is);
+
                         } catch (IOException e){
                             e.printStackTrace();
                         }
@@ -177,7 +190,13 @@ public class MainActivity extends AppCompatActivity {
             case 3:
                 sqlDB.execSQL("DELETE FROM diaryTBL WHERE date = "+ sqlDate +";");
                 sqlDB.close();
-                Toast.makeText(getApplicationContext(),"삭제됨",Toast.LENGTH_SHORT).show();
+                delPicture();
+                Toast.makeText(getApplicationContext(),"삭제되었습니다.",Toast.LENGTH_SHORT).show();
+
+                title.setText("");
+                contents.setText("작성된 일기가 없습니다.");
+                imageView.setImageBitmap(null);
+
                 return true;
         }
         return false;
@@ -198,6 +217,48 @@ public class MainActivity extends AppCompatActivity {
             db.execSQL("DROP TABLE IF EXISTS diaryTBL");
             onCreate(db);
         }
+    }
+
+    public void delPicture() {
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor();
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
+
+        if (BuildConfig.DEBUG) {
+            httpLoggingInterceptor.level(HttpLoggingInterceptor.Level.BODY);
+        } else {
+            httpLoggingInterceptor.level(HttpLoggingInterceptor.Level.NONE);
+        }
+        OkHttpClient client = new OkHttpClient.Builder()
+                                    .addInterceptor(httpLoggingInterceptor)
+                                    .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<AddPictureRes> call = apiService.delPicture(uriExtra);
+
+        call.enqueue(new Callback<AddPictureRes>() {
+            @Override
+            public void onResponse(Call<AddPictureRes> call, Response<AddPictureRes> response) {
+                if(response.isSuccessful()){
+                    if(response.body().getStatus().toString().equals("200")){
+//                        Toast.makeText(getApplicationContext(),"Deleted image", Toast.LENGTH_SHORT).show();
+//
+                    } else {
+                        Toast.makeText(getApplicationContext(),"not Deleted", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AddPictureRes> call, Throwable t) {
+                Toast.makeText(getApplicationContext(),t.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 }
