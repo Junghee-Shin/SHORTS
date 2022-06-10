@@ -5,8 +5,8 @@ Simple Diary App
 
 
 IDE : Android Studio  
-Language : Java  
-Server : PHP, Apache Tomcat
+Language : Java, PHP
+Server : Apache Tomcat
 
 
 
