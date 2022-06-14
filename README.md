@@ -6,6 +6,7 @@ Simple Diary App
 
 IDE : Android Studio  
 Language : Java, PHP  
+DB : SQLite  
 Server : Apache Tomcat
 
 
